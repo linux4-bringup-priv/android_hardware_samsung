@@ -174,7 +174,7 @@ void Fingerprint::notify(const fingerprint_msg_t* msg) {
 void Fingerprint::handleEvent(int eventCode) {
     switch (eventCode) {
         case SEM_FINGERPRINT_EVENT_GESTURE_SWIPE_DOWN:
-        case SEM_FINGERPRINT_EVENT_GESTURE_SWIPE_UP:
+        case SEM_FINGERPRINT_EVENT_GESTURE_SWIPE_UP: {
             if (!mSupportsGestures) return;
 
             struct input_event event {};
@@ -216,7 +216,12 @@ void Fingerprint::handleEvent(int eventCode) {
                 LOG(ERROR) << "Write EV_SYN to uinput node failed";
                 return;
             }
-        break;
+        } break;
+        case SEM_FINGERPRINT_EVENT_CAPTURE_READY: {
+            if (mSession != nullptr && !mSession->isClosed()) {
+                mSession->onCaptureReady();
+            }
+        } break;
     }
 }
 
