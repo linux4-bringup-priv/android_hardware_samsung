@@ -69,11 +69,13 @@ public:
     bool isClosed();
     void notify(
         const fingerprint_msg_t* msg);
+    void onCaptureReady();
 
 private:
     LegacyHAL mHal;
     LockoutTracker mLockoutTracker;
     bool mClosed = false;
+    bool mCaptureReady = false;
 
     Error VendorErrorFilter(int32_t error, int32_t* vendorCode);
     AcquiredInfo VendorAcquiredFilter(int32_t info, int32_t* vendorCode);

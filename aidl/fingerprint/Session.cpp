@@ -17,6 +17,7 @@
 #include <thread>
 
 using namespace ::android::fingerprint::samsung;
+using namespace ::std::chrono_literals;
 
 namespace aidl {
 namespace android {
@@ -68,6 +69,7 @@ ndk::ScopedAStatus Session::enroll(const HardwareAuthToken& hat,
     LOG(INFO) << "enroll";
 
     if (FingerprintHalProperties::force_calibrate().value_or(false)) {
+        mCaptureReady = false;
         mHal.request(SEM_REQUEST_FORCE_CBGE, 1);
     }
 
@@ -78,6 +80,12 @@ ndk::ScopedAStatus Session::enroll(const HardwareAuthToken& hat,
     if (error) {
         LOG(ERROR) << "ss_fingerprint_enroll failed: " << error;
         mCb->onError(Error::UNABLE_TO_PROCESS, error);
+    }
+
+    if (FingerprintHalProperties::force_calibrate().value_or(false)) {
+        while (!mCaptureReady) {
+            std::this_thread::sleep_for(100ms);
+        }
     }
 
     *out = SharedRefBase::make<CancellationSignal>(this);
@@ -420,6 +428,10 @@ void Session::notify(const fingerprint_msg_t* msg) {
             }
         } break;
     }
+}
+
+void Session::onCaptureReady() {
+    mCaptureReady = true;
 }
 
 } // namespace fingerprint
