@@ -18,6 +18,10 @@ namespace fingerprint {
 
 bool LegacyHAL::openHal(fingerprint_notify_t notify) {
     void* handle = dlopen("libbauthserver.so", RTLD_NOW);
+
+    if (!handle)
+        handle = dlopen("libsfp_sensor.so", RTLD_NOW);
+
     if (handle) {
         int err;
 

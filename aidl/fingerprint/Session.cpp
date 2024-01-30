@@ -13,6 +13,7 @@
 
 #include <android-base/logging.h>
 
+#include <dirent.h>
 #include <endian.h>
 #include <thread>
 
@@ -42,8 +43,8 @@ Session::Session(LegacyHAL hal, int userId, std::shared_ptr<ISessionCallback> cb
     mDeathRecipient = AIBinder_DeathRecipient_new(onClientDeath);
 
     char filename[64];
-    snprintf(filename, sizeof(filename), "/data/vendor_de/%d/fpdata/");
-    mHal.ss_fingerprint_set_active_group(userId, &filename[0]);
+    snprintf(filename, sizeof(filename), FINGERPRINT_DATA_DIR, userId);
+    mHal.ss_fingerprint_set_active_group(userId, filename);
 }
 
 ndk::ScopedAStatus Session::generateChallenge() {
@@ -119,9 +120,32 @@ ndk::ScopedAStatus Session::detectInteraction(std::shared_ptr<ICancellationSigna
 ndk::ScopedAStatus Session::enumerateEnrollments() {
     LOG(INFO) << "enumerateEnrollments";
 
-    int32_t error = mHal.ss_fingerprint_enumerate();
-    if (error)
-        LOG(ERROR) << "ss_fingerprint_enumerate failed: " << error;
+    if (mHal.ss_fingerprint_enumerate) {
+        int32_t error = mHal.ss_fingerprint_enumerate();
+        if (error)
+            LOG(ERROR) << "ss_fingerprint_enumerate failed: " << error;
+    } else {
+        std::vector<int> enrollments;
+        char filename[64];
+        snprintf(filename, sizeof(filename), FINGERPRINT_DATA_DIR, mUserId);
+
+        DIR* directory = opendir(filename);
+        if (directory) {
+            struct dirent* entry;
+            while ((entry = readdir(directory))) {
+                int uid, fid;
+                if (sscanf(entry->d_name, "User_%d_%dtmpl.dat", &uid, &fid)) {
+                    if (uid == mUserId)
+                        enrollments.push_back(fid);
+                }
+            }
+            closedir(directory);
+        } else {
+            LOG(WARNING) << "Failed to open " << filename;
+        }
+
+        mCb->onEnrollmentsEnumerated(enrollments);
+    }
 
     return ndk::ScopedAStatus::ok();
 }
