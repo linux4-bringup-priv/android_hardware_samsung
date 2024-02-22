@@ -67,9 +67,9 @@ using ::ndk::ScopedAStatus;
 using ::std::shared_ptr;
 using ::std::string;
 
-constexpr char kGadgetName[] = "10c00000.dwc3";
+constexpr char kGadgetName[] = GADGET_NAME;
 #ifndef UDC_PATH
-#define UDC_PATH "/sys/class/udc/10c00000.dwc3/"
+#define UDC_PATH "/sys/class/udc/" GADGET_NAME "/"
 #endif
 static MonitorFfs monitorFfs(kGadgetName);
 
