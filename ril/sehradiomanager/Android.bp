@@ -1,0 +1,27 @@
+//
+// Copyright (C) 2024 The LineageOS Project
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+
+cc_binary {
+    name: "sehradiomanager",
+    vendor: true,
+    relative_install_path: "hw",
+    srcs: [
+        "SehRadioIndication.cpp",
+        "SehRadioResponse.cpp",
+        "sehradiomanager.cpp",
+    ],
+    init_rc: ["sehradiomanager.rc"],
+    shared_libs: [
+        "libbase",
+        "libbinder",
+        "libhidlbase",
+        "libutils",
+        "vendor.samsung.hardware.radio@2.0",
+        "vendor.samsung.hardware.radio@2.1",
+        "vendor.samsung.hardware.radio@2.2",
+    ],
+    cflags: ["-Wno-unused-parameter"],
+}
