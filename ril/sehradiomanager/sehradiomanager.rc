@@ -1,0 +1,8 @@
+service vendor.sehradiomanager /vendor/bin/hw/sehradiomanager
+    class main
+    user radio
+    group radio
+    disabled
+
+on property:sys.boot_completed=1
+    start vendor.sehradiomanager
