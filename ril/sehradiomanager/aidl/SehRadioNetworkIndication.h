@@ -32,6 +32,7 @@ class SehRadioNetworkIndication : public BnSehRadioNetworkIndication {
     ndk::ScopedAStatus needTurnOnRadioIndication(int32_t type) override;
     ndk::ScopedAStatus nrBearerAllocationChanged(int32_t type, int32_t status) override;
     ndk::ScopedAStatus nrIconTypeChanged(int32_t type, int32_t nrIconType) override;
+    ndk::ScopedAStatus nrNetworkTypeAdded(int32_t type, int32_t nrNetworkType) override;
     ndk::ScopedAStatus roamingNetworkScanIsRequested(int32_t type,
                                                      const std::vector<uint8_t>& scanData) override;
     ndk::ScopedAStatus signalLevelInfoChanged(int32_t type,
