@@ -88,6 +88,12 @@ ndk::ScopedAStatus SehRadioNetworkIndication::nrIconTypeChanged(int32_t type, in
     return ndk::ScopedAStatus::ok();
 }
 
+ndk::ScopedAStatus SehRadioNetworkIndication::nrNetworkTypeAdded(int32_t type,
+                                                                 int32_t nrNetworkType) {
+    l(__func__);
+    return ndk::ScopedAStatus::ok();
+}
+
 ndk::ScopedAStatus SehRadioNetworkIndication::roamingNetworkScanIsRequested(
         int32_t type, const std::vector<uint8_t>& scanData) {
     l(__func__);
