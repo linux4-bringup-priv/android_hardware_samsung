@@ -6,68 +6,90 @@
 
 #define LOG_TAG "SehRadioManager"
 
-#include "SehRadioIndication.h"
-#include "SehRadioResponse.h"
+#include "aidl/SehRadioNetworkIndication.h"
+#include "aidl/SehRadioNetworkResponse.h"
+#include "hidl/SehRadioIndication.h"
+#include "hidl/SehRadioResponse.h"
 
 #include <android-base/file.h>
 #include <android-base/logging.h>
 #include <android-base/properties.h>
 #include <android-base/strings.h>
-#include <hidl/HidlTransportSupport.h>
+#include <android/binder_manager.h>
+#include <android/binder_process.h>
 
+#include <aidl/vendor/samsung/hardware/radio/network/ISehRadioNetwork.h>
 #include <vendor/samsung/hardware/radio/2.2/ISehRadio.h>
 
 using android::sp;
+using android::String16;
 using android::base::GetIntProperty;
 using android::base::ReadFileToString;
 using android::base::Split;
-using android::hardware::configureRpcThreadpool;
 using android::hardware::hidl_vec;
-using android::hardware::joinRpcThreadpool;
 
+using aidl::vendor::samsung::hardware::radio::network::ISehRadioNetwork;
+using aidl::vendor::samsung::hardware::radio::network::implementation::SehRadioNetworkIndication;
+using aidl::vendor::samsung::hardware::radio::network::implementation::SehRadioNetworkResponse;
 using vendor::samsung::hardware::radio::V2_2::ISehRadio;
 using vendor::samsung::hardware::radio::V2_2::SehVendorConfiguration;
 using vendor::samsung::hardware::radio::V2_2::implementation::SehRadioIndication;
 using vendor::samsung::hardware::radio::V2_2::implementation::SehRadioResponse;
 
-hidl_vec<SehVendorConfiguration> LoadConfiguration(std::string data) {
-    std::vector<SehVendorConfiguration> config;
+using AidlVendorConfig = aidl::vendor::samsung::hardware::radio::network::SehVendorConfiguration;
+
+template <typename C>
+std::vector<C> LoadConfiguration(std::string data) {
+    std::vector<C> config;
 
     for (std::string line : Split(data, "\n")) {
         if (line == "\0") break;
 
         std::vector<std::string> parts = Split(line, "=");
         if (parts.size() == 2) {
-            config.push_back(SehVendorConfiguration(parts[0], parts[1]));
+            config.push_back(C(parts[0], parts[1]));
             LOG(INFO) << line;
         } else {
             LOG(ERROR) << "Invalid data: " << line;
         }
     }
 
-    return hidl_vec<SehVendorConfiguration>(config);
+    return config;
 }
 
 int main() {
-    int slotCount = GetIntProperty("ro.vendor.multisim.simslotcount", 1);
-    configureRpcThreadpool(slotCount * 2 + 1, true);
+    ABinderProcess_setThreadPoolMaxThreadCount(0);
+    ABinderProcess_startThreadPool();
 
     std::string content;
     if (!ReadFileToString("/vendor/etc/sehradiomanager.conf", &content)) {
         LOG(WARNING) << "Could not read config, setting defaults";
         content = "FW_READY=1";
     }
-    auto config = LoadConfiguration(content);
 
+    int slotCount = GetIntProperty("ro.vendor.multisim.simslotcount", 1);
     for (int slot = 1; slot <= slotCount; slot++) {
-        auto samsungIndication = sp<SehRadioIndication>::make();
-        auto samsungResponse = sp<SehRadioResponse>::make();
-        auto svc = ISehRadio::getService("slot" + std::to_string(slot));
-        svc->setResponseFunction(samsungResponse, samsungIndication);
-        svc->setVendorSpecificConfiguration(0x3232, config);
+        auto slotName = "slot" + std::to_string(slot);
+        auto aidlSvcName = std::string(ISehRadioNetwork::descriptor) + "/" + slotName;
+        if (AServiceManager_isDeclared(aidlSvcName.c_str())) {
+            auto config = LoadConfiguration<AidlVendorConfig>(content);
+            auto samsungIndication = ndk::SharedRefBase::make<SehRadioNetworkIndication>();
+            auto samsungResponse = ndk::SharedRefBase::make<SehRadioNetworkResponse>();
+            auto svc = ISehRadioNetwork::fromBinder(
+                    ndk::SpAIBinder(AServiceManager_waitForService(aidlSvcName.c_str())));
+            svc->setResponseFunctions(samsungResponse, samsungIndication);
+            svc->setVendorSpecificConfiguration(0x4242, config);
+        } else {
+            auto config = LoadConfiguration<SehVendorConfiguration>(content);
+            auto samsungIndication = sp<SehRadioIndication>::make();
+            auto samsungResponse = sp<SehRadioResponse>::make();
+            auto svc = ISehRadio::getService(slotName);
+            svc->setResponseFunction(samsungResponse, samsungIndication);
+            svc->setVendorSpecificConfiguration(0x3232, hidl_vec(config));
+        }
         LOG(INFO) << "Done (slot" << slot << ")";
     }
 
-    joinRpcThreadpool();
-    return 1;
+    ABinderProcess_joinThreadPool();
+    return EXIT_FAILURE;  // should not reach
 }
