@@ -9,6 +9,7 @@
 #include <aidl/android/hardware/light/BnLights.h>
 #include <samsung_lights.h>
 
+#include <functional>
 #include <unordered_map>
 
 using ::aidl::android::hardware::light::HwLightState;
