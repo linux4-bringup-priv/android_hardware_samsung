@@ -11,6 +11,8 @@
 #include "hidl/SehRadioIndication.h"
 #include "hidl/SehRadioResponse.h"
 
+#include <thread>
+
 #include <android-base/file.h>
 #include <android-base/logging.h>
 #include <android-base/properties.h>
@@ -21,12 +23,17 @@
 #include <aidl/vendor/samsung/hardware/radio/network/ISehRadioNetwork.h>
 #include <vendor/samsung/hardware/radio/2.2/ISehRadio.h>
 
+using namespace std::chrono_literals;
+
 using android::sp;
 using android::String16;
+using android::wp;
 using android::base::GetIntProperty;
 using android::base::ReadFileToString;
 using android::base::Split;
+using android::hardware::hidl_death_recipient;
 using android::hardware::hidl_vec;
+using android::hidl::base::V1_0::IBase;
 
 using aidl::vendor::samsung::hardware::radio::network::ISehRadioNetwork;
 using aidl::vendor::samsung::hardware::radio::network::implementation::SehRadioNetworkIndication;
@@ -57,6 +64,23 @@ std::vector<C> LoadConfiguration(std::string data) {
     return config;
 }
 
+bool died = false;
+void onRILDDeath(void* cookie) {
+    if (died) return;
+    died = true;
+
+    LOG(ERROR) << "SehRadio died, sleeping for 10s before restarting";
+    std::this_thread::sleep_for(10000ms);
+    exit(1);
+}
+
+struct RilHidlDeathRecipient : public hidl_death_recipient {
+    void serviceDied(uint64_t cookie, const wp<IBase>& who) override { onRILDDeath((void*)cookie); }
+};
+
+static const auto gHalDeathRecipient = AIBinder_DeathRecipient_new(onRILDDeath);
+static const auto gHidlHalDeathRecipient = sp<RilHidlDeathRecipient>::make();
+
 int main() {
     ABinderProcess_setThreadPoolMaxThreadCount(0);
     ABinderProcess_startThreadPool();
@@ -79,6 +103,8 @@ int main() {
                     ndk::SpAIBinder(AServiceManager_waitForService(aidlSvcName.c_str())));
             svc->setResponseFunctions(samsungResponse, samsungIndication);
             svc->setVendorSpecificConfiguration(0x4242, config);
+            AIBinder_linkToDeath(svc->asBinder().get(), gHalDeathRecipient, 0);
+            AIBinder_incStrong(svc->asBinder().get());
         } else {
             auto config = LoadConfiguration<SehVendorConfiguration>(content);
             auto samsungIndication = sp<SehRadioIndication>::make();
@@ -86,6 +112,8 @@ int main() {
             auto svc = ISehRadio::getService(slotName);
             svc->setResponseFunction(samsungResponse, samsungIndication);
             svc->setVendorSpecificConfiguration(0x3232, hidl_vec(config));
+            svc->linkToDeath(gHidlHalDeathRecipient, 0);
+            svc->incStrong(gHidlHalDeathRecipient.get());
         }
         LOG(INFO) << "Done (slot" << slot << ")";
     }
