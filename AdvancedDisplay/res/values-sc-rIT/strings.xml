@@ -18,4 +18,5 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="category_screen_title">Ischermu</string>
     <string name="screen_colors_title">Colores</string>
+    <string name="mdnie_scenario_video_warm">Tonu vìdeu callente</string>
 </resources>
