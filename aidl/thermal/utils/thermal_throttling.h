@@ -27,7 +27,6 @@
 
 #include "power_files.h"
 #include "thermal_info.h"
-#include "thermal_stats_helper.h"
 
 namespace aidl {
 namespace android {
@@ -86,8 +85,7 @@ class ThermalThrottling {
     // Compute the throttling target from all the sensors' request
     void computeCoolingDevicesRequest(std::string_view sensor_name, const SensorInfo &sensor_info,
                                       const ThrottlingSeverity curr_severity,
-                                      std::vector<std::string> *cooling_devices_to_update,
-                                      ThermalStatsHelper *thermal_stats_helper);
+                                      std::vector<std::string> *cooling_devices_to_update);
     // Get the aggregated (from all sensor) max request for a cooling device
     bool getCdevMaxRequest(std::string_view cdev_name, int *max_state);
 

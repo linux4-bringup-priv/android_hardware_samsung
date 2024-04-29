@@ -658,8 +658,7 @@ void ThermalThrottling::thermalThrottlingUpdate(
 
 void ThermalThrottling::computeCoolingDevicesRequest(
         std::string_view sensor_name, const SensorInfo &sensor_info,
-        const ThrottlingSeverity curr_severity, std::vector<std::string> *cooling_devices_to_update,
-        ThermalStatsHelper *thermal_stats_helper) {
+        const ThrottlingSeverity curr_severity, std::vector<std::string> *cooling_devices_to_update) {
     int release_step = 0;
     std::unique_lock<std::shared_mutex> _lock(thermal_throttling_status_map_mutex_);
 
@@ -726,9 +725,6 @@ void ThermalThrottling::computeCoolingDevicesRequest(
                 cooling_devices_to_update->emplace_back(cdev_name);
             }
             cdev_request_pair.second = request_state;
-            // Update sensor cdev request time in state
-            thermal_stats_helper->updateSensorCdevRequestStats(sensor_name, cdev_name,
-                                                               cdev_request_pair.second);
         }
     }
 }
