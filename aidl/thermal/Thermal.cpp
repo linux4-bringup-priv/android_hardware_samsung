@@ -30,6 +30,8 @@ namespace implementation {
 
 namespace {
 
+using std::chrono::system_clock;
+
 ndk::ScopedAStatus initErrorStatus() {
     return ndk::ScopedAStatus::fromExceptionCodeWithMessage(EX_ILLEGAL_STATE,
                                                             "ThermalHAL not initialized properly.");
@@ -522,84 +524,6 @@ void Thermal::dumpPowerRailInfo(std::ostringstream *dump_buf) {
     }
 }
 
-void Thermal::dumpStatsRecord(std::ostringstream *dump_buf, const StatsRecord &stats_record,
-                              std::string_view line_prefix) {
-    const auto now = boot_clock::now();
-    *dump_buf << line_prefix << "Time Since Last Stats Report: "
-              << std::chrono::duration_cast<std::chrono::minutes>(
-                         now - stats_record.last_stats_report_time)
-                         .count()
-              << " mins" << std::endl;
-    *dump_buf << line_prefix << "Time in State ms: [";
-    for (const auto &time_in_state : stats_record.time_in_state_ms) {
-        *dump_buf << time_in_state.count() << " ";
-    }
-    *dump_buf << "]" << std::endl;
-}
-
-void Thermal::dumpThermalStats(std::ostringstream *dump_buf) {
-    *dump_buf << "getThermalStatsInfo:" << std::endl;
-    *dump_buf << " Sensor Temp Stats Info:" << std::endl;
-    const auto &sensor_temp_stats_map_ = thermal_helper_.GetSensorTempStatsSnapshot();
-    const std::string sensor_temp_stats_line_prefix("    ");
-    for (const auto &sensor_temp_stats_pair : sensor_temp_stats_map_) {
-        *dump_buf << "  Sensor Name: " << sensor_temp_stats_pair.first << std::endl;
-        const auto &sensor_temp_stats = sensor_temp_stats_pair.second;
-        *dump_buf << "   Max Temp: " << sensor_temp_stats.max_temp << ", TimeStamp: "
-                  << system_clock::to_time_t(sensor_temp_stats.max_temp_timestamp) << std::endl;
-        *dump_buf << "   Min Temp: " << sensor_temp_stats.min_temp << ", TimeStamp: "
-                  << system_clock::to_time_t(sensor_temp_stats.min_temp_timestamp) << std::endl;
-        for (const auto &stats_by_threshold : sensor_temp_stats.stats_by_custom_threshold) {
-            *dump_buf << "   Record by Threshold: [";
-            for (const auto &threshold : stats_by_threshold.thresholds) {
-                *dump_buf << threshold << " ";
-            }
-            *dump_buf << "]" << std::endl;
-            if (stats_by_threshold.logging_name.has_value()) {
-                *dump_buf << "    Logging Name: " << stats_by_threshold.logging_name.value()
-                          << std::endl;
-            }
-            dumpStatsRecord(dump_buf, stats_by_threshold.stats_record,
-                            sensor_temp_stats_line_prefix);
-        }
-
-        if (sensor_temp_stats.stats_by_default_threshold.has_value()) {
-            *dump_buf << "   Record by Severity:" << std::endl;
-            dumpStatsRecord(dump_buf, sensor_temp_stats.stats_by_default_threshold.value(),
-                            sensor_temp_stats_line_prefix);
-        }
-    }
-    *dump_buf << " Sensor Cdev Request Stats Info:" << std::endl;
-    const auto &sensor_cdev_request_stats_map_ =
-            thermal_helper_.GetSensorCoolingDeviceRequestStatsSnapshot();
-    const std::string sensor_cdev_request_stats_line_prefix("     ");
-    for (const auto &sensor_cdev_request_stats_pair : sensor_cdev_request_stats_map_) {
-        *dump_buf << "  Sensor Name: " << sensor_cdev_request_stats_pair.first << std::endl;
-        for (const auto &cdev_request_stats_pair : sensor_cdev_request_stats_pair.second) {
-            *dump_buf << "   Cooling Device Name: " << cdev_request_stats_pair.first << std::endl;
-            const auto &request_stats = cdev_request_stats_pair.second;
-            for (const auto &stats_by_threshold : request_stats.stats_by_custom_threshold) {
-                *dump_buf << "    Record by Threshold: [";
-                for (const auto &threshold : stats_by_threshold.thresholds) {
-                    *dump_buf << threshold << " ";
-                }
-                *dump_buf << "]" << std::endl;
-                if (stats_by_threshold.logging_name.has_value()) {
-                    *dump_buf << "     Logging Name: " << stats_by_threshold.logging_name.value()
-                              << std::endl;
-                }
-                dumpStatsRecord(dump_buf, stats_by_threshold.stats_record,
-                                sensor_cdev_request_stats_line_prefix);
-            }
-            if (request_stats.stats_by_default_threshold.has_value()) {
-                *dump_buf << "    Record by All State" << std::endl;
-                dumpStatsRecord(dump_buf, request_stats.stats_by_default_threshold.value(),
-                                sensor_cdev_request_stats_line_prefix);
-            }
-        }
-    }
-}
-
 void Thermal::dumpThermalData(int fd) {
     std::ostringstream dump_buf;
 
@@ -729,7 +653,6 @@ void Thermal::dumpThermalData(int fd) {
         dumpThrottlingInfo(&dump_buf);
         dumpThrottlingRequestStatus(&dump_buf);
         dumpPowerRailInfo(&dump_buf);
-        dumpThermalStats(&dump_buf);
         {
             dump_buf << "getAIDLPowerHalInfo:" << std::endl;
             dump_buf << " Exist: " << std::boolalpha << thermal_helper_.isAidlPowerHalExist()

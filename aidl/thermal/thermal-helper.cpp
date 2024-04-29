@@ -140,11 +140,6 @@ ThermalHelper::ThermalHelper(const NotificationCallback &cb)
         ret = false;
     }
 
-    if (!thermal_stats_helper_.initializeStats(config, sensor_info_map_,
-                                               cooling_device_info_map_)) {
-        LOG(FATAL) << "Failed to initialize thermal stats";
-    }
-
     for (auto const &name_status_pair : sensor_info_map_) {
         sensor_status_map_[name_status_pair.first] = {
                 .severity = ThrottlingSeverity::NONE,
@@ -421,7 +416,6 @@ bool ThermalHelper::readTemperature(
             sensor_log << sensor_log_pair.first << ":" << sensor_log_pair.second << " ";
         }
         // Update sensor temperature time in state
-        thermal_stats_helper_.updateSensorTempStatsBySeverity(sensor_name, out->throttlingStatus);
         LOG(INFO) << sensor_name.data() << ":" << out->value << " raw data: " << sensor_log.str();
     }
 
@@ -944,8 +938,6 @@ bool ThermalHelper::readThermalSensor(std::string_view sensor_name, float *temp,
         sensor_status.thermal_cached.temp = *temp;
         sensor_status.thermal_cached.timestamp = now;
     }
-    auto real_temp = (*temp) * sensor_info.multiplier;
-    thermal_stats_helper_.updateSensorTempStatsByThreshold(sensor_name, real_temp);
     return true;
 }
 
@@ -1089,7 +1081,7 @@ std::chrono::milliseconds ThermalHelper::thermalWatcherCallbackFunc(
 
         thermal_throttling_.computeCoolingDevicesRequest(
                 name_status_pair.first, sensor_info, sensor_status.severity,
-                &cooling_devices_to_update, &thermal_stats_helper_);
+                &cooling_devices_to_update);
         if (min_sleep_ms > sleep_ms) {
             min_sleep_ms = sleep_ms;
         }
@@ -1113,11 +1105,6 @@ std::chrono::milliseconds ThermalHelper::thermalWatcherCallbackFunc(
                 sendPowerExtHint(t);
             }
         }
-    }
-
-    int count_failed_reporting = thermal_stats_helper_.reportStats();
-    if (count_failed_reporting != 0) {
-        LOG(ERROR) << "Failed to report " << count_failed_reporting << " thermal stats";
     }
 
     return min_sleep_ms;
