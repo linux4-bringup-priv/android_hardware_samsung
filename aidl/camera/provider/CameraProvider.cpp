@@ -57,34 +57,13 @@ void CameraProvider::addDeviceNames(int camera_id, CameraDeviceStatus status, bo
 
     mCameraIds.add(cameraIdStr);
 
-    // initialize mCameraDeviceNames and mOpenLegacySupported
-    mOpenLegacySupported[cameraIdStr] = false;
+    // initialize mCameraDeviceNames
     int deviceVersion = mModule->getDeviceVersion(camera_id);
     auto deviceNamePair =
-            std::make_pair(cameraIdStr, getAidlDeviceName(cameraIdStr, deviceVersion));
+            std::make_pair(cameraIdStr, getAidlDeviceName(cameraIdStr));
     mCameraDeviceNames.add(deviceNamePair);
     if (cam_new) {
         mCallbacks->cameraDeviceStatusChange(deviceNamePair.second, status);
-    }
-    if (deviceVersion >= CAMERA_DEVICE_API_VERSION_3_2 && mModule->isOpenLegacyDefined()) {
-        // try open_legacy to see if it actually works
-        struct hw_device_t* halDev = nullptr;
-        int ret = mModule->openLegacy(cameraId, CAMERA_DEVICE_API_VERSION_1_0, &halDev);
-        if (ret == 0) {
-            mOpenLegacySupported[cameraIdStr] = true;
-            halDev->close(halDev);
-            deviceNamePair = std::make_pair(
-                    cameraIdStr, getAidlDeviceName(cameraIdStr, CAMERA_DEVICE_API_VERSION_1_0));
-            mCameraDeviceNames.add(deviceNamePair);
-            if (cam_new) {
-                mCallbacks->cameraDeviceStatusChange(deviceNamePair.second, status);
-            }
-        } else if (ret == -EBUSY || ret == -EUSERS) {
-            // Looks like this provider instance is not initialized during
-            // system startup and there are other camera users already.
-            // Not a good sign but not fatal.
-            ALOGW("%s: open_legacy try failed!", __FUNCTION__);
-        }
     }
 }
 
@@ -95,18 +74,9 @@ void CameraProvider::removeDeviceNames(int camera_id) {
 
     int deviceVersion = mModule->getDeviceVersion(camera_id);
     auto deviceNamePair =
-            std::make_pair(cameraIdStr, getAidlDeviceName(cameraIdStr, deviceVersion));
+            std::make_pair(cameraIdStr, getAidlDeviceName(cameraIdStr));
     mCameraDeviceNames.remove(deviceNamePair);
     mCallbacks->cameraDeviceStatusChange(deviceNamePair.second, CameraDeviceStatus::NOT_PRESENT);
-    if (deviceVersion >= CAMERA_DEVICE_API_VERSION_3_2 && mModule->isOpenLegacyDefined() &&
-        mOpenLegacySupported[cameraIdStr]) {
-        deviceNamePair = std::make_pair(
-                cameraIdStr, getAidlDeviceName(cameraIdStr, CAMERA_DEVICE_API_VERSION_1_0));
-        mCameraDeviceNames.remove(deviceNamePair);
-        mCallbacks->cameraDeviceStatusChange(deviceNamePair.second,
-                                             CameraDeviceStatus::NOT_PRESENT);
-    }
-
     mModule->removeCamera(camera_id);
 }
 
@@ -177,41 +147,8 @@ void CameraProvider::sTorchModeStatusChange(const struct camera_module_callbacks
     }
 }
 
-std::string CameraProvider::getAidlDeviceName(std::string cameraId, int deviceVersion) {
-    // Maybe consider create a version check method and SortedVec to speed up?
-    if (deviceVersion != CAMERA_DEVICE_API_VERSION_1_0 &&
-        deviceVersion != CAMERA_DEVICE_API_VERSION_3_2 &&
-        deviceVersion != CAMERA_DEVICE_API_VERSION_3_3 &&
-        deviceVersion != CAMERA_DEVICE_API_VERSION_3_4 &&
-        deviceVersion != CAMERA_DEVICE_API_VERSION_3_5 &&
-        deviceVersion != CAMERA_DEVICE_API_VERSION_3_6) {
-        return std::string("");
-    }
-
-    // Supported combinations:
-    // CAMERA_DEVICE_API_VERSION_1_0 -> ICameraDevice@1.0
-    // CAMERA_DEVICE_API_VERSION_3_[2-4] -> ICameraDevice@[3.2|3.3]
-    // CAMERA_DEVICE_API_VERSION_3_5 + CAMERA_MODULE_API_VERSION_2_4 -> ICameraDevice@3.4
-    // CAMERA_DEVICE_API_VERSION_3_[5-6] + CAMERA_MODULE_API_VERSION_2_5 -> ICameraDevice@3.5
-    bool isV1 = deviceVersion == CAMERA_DEVICE_API_VERSION_1_0;
-    int versionMajor = isV1 ? 1 : 3;
-    int versionMinor = isV1 ? 0 : 5;
-    if (deviceVersion == CAMERA_DEVICE_API_VERSION_3_5) {
-        if (mModule->getModuleApiVersion() == CAMERA_MODULE_API_VERSION_2_5) {
-            versionMinor = 5;
-        } else {
-            versionMinor = 4;
-        }
-    } else if (deviceVersion == CAMERA_DEVICE_API_VERSION_3_6) {
-        versionMinor = 5;
-    }
-    char deviceName[kMaxCameraDeviceNameLen];
-// HACK: AIDL VERSION!
-    versionMajor = 1;
-    versionMinor = 0;
-    snprintf(deviceName, sizeof(deviceName), "device@%d.%d/internal/%s", versionMajor, versionMinor,
-             cameraId.c_str());
-    return deviceName;
+std::string CameraProvider::getAidlDeviceName(std::string cameraId) {
+    return "device@" + CameraDevice::kDeviceVersion + "/internal/" + cameraId;
 }
 
 CameraProvider::CameraProvider()
@@ -443,12 +380,20 @@ ndk::ScopedAStatus CameraProvider::getCameraDeviceInterface(
         return fromStatus(Status::ILLEGAL_ARGUMENT);
     }
 
-    // HACK!
-    /*if (mCameraStatusMap.count(in_cameraDeviceName) == 0 ||
-        mCameraStatusMap[in_cameraDeviceName] != CAMERA_DEVICE_STATUS_PRESENT) {
-        *_aidl_return = nullptr;
-        return fromStatus(Status::ILLEGAL_ARGUMENT);
-    }*/
+    ssize_t index = mCameraDeviceNames.indexOf(std::make_pair(cameraId, in_cameraDeviceName));
+    if (index == NAME_NOT_FOUND) { // Either an illegal name or a device version mismatch
+        Status status = Status::OK;
+        ssize_t idx = mCameraIds.indexOf(cameraId);
+        if (idx == NAME_NOT_FOUND) {
+            ALOGE("%s: cannot find camera %s!", __FUNCTION__, cameraId.c_str());
+            status = Status::ILLEGAL_ARGUMENT;
+        } else { // invalid version
+            ALOGE("%s: camera device %s does not support version %s!",
+                    __FUNCTION__, cameraId.c_str(), deviceVersion.c_str());
+            status = Status::OPERATION_NOT_SUPPORTED;
+        }
+        return fromStatus(status);
+    }
 
     ALOGV("Constructing camera device");
     std::shared_ptr<CameraDevice> deviceImpl =

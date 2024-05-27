@@ -61,6 +61,10 @@ class CameraDevice : public BnCameraDevice {
     // Used by provider HAL to signal external camera disconnected
     void setConnectionStatus(bool connected);
 
+    // Device version to be used by the external camera provider.
+    // Should be of the form <major>.<minor>
+    static std::string kDeviceVersion;
+
   protected:
     virtual std::shared_ptr<CameraDeviceSession> createSession(
             camera3_device_t*, const camera_metadata_t* deviceInfo,

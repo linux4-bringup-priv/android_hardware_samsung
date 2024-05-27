@@ -1152,11 +1152,12 @@ ndk::ScopedAStatus CameraDeviceSession::processCaptureRequest(
 
     *_aidl_return = 0;
     Status s = Status::OK;
-    for (size_t i = 0; i < in_requests.size(); i++, *_aidl_return++) {
+    for (size_t i = 0; i < in_requests.size(); i++) {
         s = processOneCaptureRequest(in_requests[i]);
         if (s != Status::OK) {
             break;
         }
+        *_aidl_return = static_cast<int32_t>(i) + 1;
     }
 
     if (s == Status::OK && in_requests.size() > 1) {

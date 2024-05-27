@@ -15,6 +15,8 @@ namespace camera {
 namespace device {
 namespace implementation {
 
+std::string CameraDevice::kDeviceVersion = "1.1";
+
 CameraDevice::CameraDevice(
         sp<CameraModule> module, const std::string& cameraId,
         const SortedVector<std::pair<std::string, std::string>>& cameraDeviceNames)
@@ -335,8 +337,16 @@ ndk::ScopedAStatus CameraDevice::openInjectionSession(const std::shared_ptr<ICam
     return fromStatus(Status::OPERATION_NOT_SUPPORTED);
 }
 
-ndk::ScopedAStatus CameraDevice::setTorchMode(bool) {
-    return fromStatus(Status::OPERATION_NOT_SUPPORTED);
+ndk::ScopedAStatus CameraDevice::setTorchMode(bool in_on) {
+    if (!mModule->isSetTorchModeSupported()) {
+        return fromStatus(Status::OPERATION_NOT_SUPPORTED);
+    }
+
+    Status status = initStatus();
+    if (status == Status::OK) {
+        status = getAidlStatus(mModule->setTorchMode(mCameraId.c_str(), in_on));
+    }
+    return fromStatus(status);
 }
 
 ndk::ScopedAStatus CameraDevice::turnOnTorchWithStrengthLevel(int32_t) {

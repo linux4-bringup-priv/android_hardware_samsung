@@ -58,7 +58,6 @@ class CameraProvider : public BnCameraProvider, protected camera_module_callback
 
     int mNumberOfLegacyCameras;
     std::map<std::string, camera_device_status_t> mCameraStatusMap; // camera id -> status
-    std::map<std::string, bool> mOpenLegacySupported; // camera id -> open_legacy HAL1.0 supported
     SortedVector<std::string> mCameraIds; // the "0"/"1" legacy camera Ids
     // (cameraId string, hidl device name) pairs
     SortedVector<std::pair<std::string, std::string>> mCameraDeviceNames;
@@ -72,8 +71,8 @@ class CameraProvider : public BnCameraProvider, protected camera_module_callback
     bool setUpVendorTags();
     int checkCameraVersion(int id, camera_info info);
 
-    // create AIDL device name from camera ID and legacy device version
-    std::string getAidlDeviceName(std::string cameraId, int deviceVersion);
+    // create AIDL device name from camera ID
+    std::string getAidlDeviceName(std::string cameraId);
 
     // static callback forwarding methods
     static void sCameraDeviceStatusChange(
