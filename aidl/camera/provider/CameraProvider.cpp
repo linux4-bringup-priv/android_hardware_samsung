@@ -206,6 +206,9 @@ std::string CameraProvider::getAidlDeviceName(std::string cameraId, int deviceVe
         versionMinor = 5;
     }
     char deviceName[kMaxCameraDeviceNameLen];
+// HACK: AIDL VERSION!
+    versionMajor = 1;
+    versionMinor = 0;
     snprintf(deviceName, sizeof(deviceName), "device@%d.%d/internal/%s", versionMajor, versionMinor,
              cameraId.c_str());
     return deviceName;
@@ -440,11 +443,12 @@ ndk::ScopedAStatus CameraProvider::getCameraDeviceInterface(
         return fromStatus(Status::ILLEGAL_ARGUMENT);
     }
 
-    if (mCameraStatusMap.count(in_cameraDeviceName) == 0 ||
+    // HACK!
+    /*if (mCameraStatusMap.count(in_cameraDeviceName) == 0 ||
         mCameraStatusMap[in_cameraDeviceName] != CAMERA_DEVICE_STATUS_PRESENT) {
         *_aidl_return = nullptr;
         return fromStatus(Status::ILLEGAL_ARGUMENT);
-    }
+    }*/
 
     ALOGV("Constructing camera device");
     std::shared_ptr<CameraDevice> deviceImpl =
