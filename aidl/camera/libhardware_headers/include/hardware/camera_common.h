@@ -1241,6 +1241,14 @@ typedef struct camera_module {
      */
     void (*notify_device_state_change)(uint64_t deviceState);
 
+    /**
+     * set_torch_mode_strength:
+     *
+     * Same as set_torch_mode but with support for specifying the strength level.
+     *
+     */
+    int (*set_torch_mode_strength)(const char* camera_id, bool enabled, int32_t strength);
+
     /* reserved for future use */
     void* reserved[2];
 } camera_module_t;

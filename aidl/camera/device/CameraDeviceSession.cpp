@@ -9,7 +9,7 @@
 
 #include "CameraDeviceSession.h"
 
-#include <CameraModule.h>
+#include <SamsungCameraModule.h>
 #include <aidl/android/hardware/camera/device/ErrorMsg.h>
 #include <aidl/android/hardware/camera/device/ShutterMsg.h>
 #include <aidlcommonsupport/NativeHandle.h>
@@ -28,7 +28,7 @@ using ::aidl::android::hardware::camera::device::PhysicalCameraMetadata;
 using ::aidl::android::hardware::camera::device::ShutterMsg;
 using ::aidl::android::hardware::camera::device::StreamType;
 using ::aidl::android::hardware::graphics::common::BufferUsage;
-using ::android::hardware::camera::common::helper::CameraModule;
+using ::android::hardware::camera::common::helper::SamsungCameraModule;
 
 // Size of request metadata fast message queue. Change to 0 to always use hwbinder buffer.
 static constexpr int32_t CAMERA_REQUEST_METADATA_QUEUE_SIZE = 1 << 20 /* 1MB */;
@@ -78,7 +78,7 @@ CameraDeviceSession::CameraDeviceSession(camera3_device_t* device,
         mDerivePostRawSensKey = true;
     }
 
-    (void)CameraModule::isLogicalMultiCamera(mDeviceInfo, &mPhysicalCameraIds);
+    (void)SamsungCameraModule::isLogicalMultiCamera(mDeviceInfo, &mPhysicalCameraIds);
 
     mInitFail = initialize();
 }

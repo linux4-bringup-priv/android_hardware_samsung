@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <CameraModule.h>
+#include <SamsungCameraModule.h>
 #include <VendorTagDescriptor.h>
 #include <aidl/android/hardware/camera/device/ICameraDevice.h>
 #include <aidl/android/hardware/camera/provider/BnCameraProvider.h>
@@ -26,7 +26,7 @@ using ::aidl::android::hardware::camera::provider::BnCameraProvider;
 using ::aidl::android::hardware::camera::provider::CameraIdAndStreamCombination;
 using ::aidl::android::hardware::camera::provider::ConcurrentCameraIdCombination;
 using ::aidl::android::hardware::camera::provider::ICameraProviderCallback;
-using ::android::hardware::camera::common::helper::CameraModule;
+using ::android::hardware::camera::common::helper::SamsungCameraModule;
 
 class CameraProvider : public BnCameraProvider, protected camera_module_callbacks_t {
   public:
@@ -54,7 +54,7 @@ class CameraProvider : public BnCameraProvider, protected camera_module_callback
     Mutex mCbLock;
     std::shared_ptr<ICameraProviderCallback> mCallbacks = nullptr;
 
-    sp<CameraModule> mModule;
+    sp<SamsungCameraModule> mModule;
 
     int mNumberOfLegacyCameras;
     std::map<std::string, camera_device_status_t> mCameraStatusMap;  // camera id -> status
