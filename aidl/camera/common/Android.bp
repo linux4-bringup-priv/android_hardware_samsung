@@ -12,6 +12,7 @@ cc_library_static {
         "VendorTagDescriptor.cpp",
         "HandleImporter.cpp",
         "Exif.cpp",
+        "SamsungCameraModule.cpp",
         "SimpleThread.cpp",
     ],
     cflags: [
@@ -29,7 +30,7 @@ cc_library_static {
     ],
     include_dirs: ["system/media/private/camera/include"],
     header_libs: ["libhardware_headers.camera3_samsung"],
-    export_include_dirs: ["include"],
+    export_include_dirs: ["include", "include_samsung"],
     export_shared_lib_headers: ["libui"],
 }
 

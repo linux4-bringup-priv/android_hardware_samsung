@@ -187,7 +187,7 @@ bool CameraProvider::initialize() {
         return true;
     }
 
-    mModule = new CameraModule(rawModule);
+    mModule = new SamsungCameraModule(rawModule);
     err = mModule->init();
     if (err != OK) {
         ALOGE("Could not initialize camera HAL module: %d (%s)", err, strerror(-err));
