@@ -4,9 +4,29 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+soong_config_module_type {
+    name: "extra_ids",
+    module_type: "cc_defaults",
+    config_namespace: "samsungCameraVars",
+    value_variables: ["extra_ids"],
+    properties: ["cppflags"],
+}
+
+extra_ids {
+    name: "extra_id_defaults",
+    soong_config_variables: {
+        extra_ids: {
+            cppflags: ["-DEXTRA_IDS=%s"],
+        },
+    },
+}
+
 cc_binary {
     name: "android.hardware.camera.provider-service.samsung",
-    defaults: ["samsung_camera3_defaults"],
+    defaults: [
+        "extra_id_defaults",
+        "samsung_camera3_defaults"
+    ],
     init_rc: ["android.hardware.camera.provider-service.samsung.rc"],
     vintf_fragments: ["android.hardware.camera.provider-service.samsung.xml"],
     vendor: true,
