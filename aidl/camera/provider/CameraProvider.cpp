@@ -158,6 +158,29 @@ CameraProvider::CameraProvider()
 
 CameraProvider::~CameraProvider() {}
 
+bool CameraProvider::initCamera(int id) {
+    struct camera_info info;
+    auto rc = mModule->getCameraInfo(id, &info);
+    if (rc != NO_ERROR) {
+        ALOGE("%s: Camera info query failed!", __func__);
+        return true;
+    }
+
+    if (checkCameraVersion(id, info) != OK) {
+        ALOGE("%s: Camera version check failed!", __func__);
+        return true;
+    }
+
+    char cameraId[kMaxCameraIdLen];
+    snprintf(cameraId, sizeof(cameraId), "%d", id);
+    std::string cameraIdStr(cameraId);
+    mCameraStatusMap[cameraIdStr] = CAMERA_DEVICE_STATUS_PRESENT;
+
+    addDeviceNames(id);
+
+    return false;
+}
+
 bool CameraProvider::initialize() {
     camera_module_t* rawModule;
     int err = hw_get_module(CAMERA_HARDWARE_MODULE_ID, (const hw_module_t**)&rawModule);
@@ -191,26 +214,23 @@ bool CameraProvider::initialize() {
 
     mNumberOfLegacyCameras = mModule->getNumberOfCameras();
     for (int i = 0; i < mNumberOfLegacyCameras; i++) {
-        struct camera_info info;
-        auto rc = mModule->getCameraInfo(i, &info);
-        if (rc != NO_ERROR) {
-            ALOGE("%s: Camera info query failed!", __func__);
+        if (initCamera(i)) {
             mModule.clear();
             return true;
         }
-
-        if (checkCameraVersion(i, info) != OK) {
-            ALOGE("%s: Camera version check failed!", __func__);
+    }
+    std::vector<int> extraIDs = {
+#ifdef EXTRA_IDS
+        EXTRA_IDS
+#endif
+    };
+    for (int i : extraIDs) {
+        if (initCamera(i)) {
             mModule.clear();
             return true;
+        } else {
+            mNumberOfLegacyCameras++;
         }
-
-        char cameraId[kMaxCameraIdLen];
-        snprintf(cameraId, sizeof(cameraId), "%d", i);
-        std::string cameraIdStr(cameraId);
-        mCameraStatusMap[cameraIdStr] = CAMERA_DEVICE_STATUS_PRESENT;
-
-        addDeviceNames(i);
     }
 
     return false;  // mInitFailed
