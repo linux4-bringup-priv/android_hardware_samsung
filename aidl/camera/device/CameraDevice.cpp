@@ -20,7 +20,7 @@ namespace implementation {
 std::string CameraDevice::kDeviceVersion = "1.1";
 
 CameraDevice::CameraDevice(
-        sp<CameraModule> module, const std::string& cameraId,
+        sp<SamsungCameraModule> module, const std::string& cameraId,
         const SortedVector<std::pair<std::string, std::string>>& cameraDeviceNames)
     : mModule(module),
       mCameraId(cameraId),
@@ -65,8 +65,18 @@ ndk::ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* _aidl_
         // Module 2.1+ codepath.
         struct camera_info info;
         int ret = mModule->getCameraInfo(mCameraIdInt, &info);
-        if (ret == OK) {
-            convertToAidl(info.static_camera_characteristics, _aidl_return);
+        if (ret == OK && info.static_camera_characteristics != NULL) {
+            common::helper::CameraMetadata metadata = (camera_metadata_t*)info.static_camera_characteristics;
+            camera_metadata_entry_t entry = metadata.find(ANDROID_FLASH_INFO_AVAILABLE);
+            if (entry.count > 0 && *entry.data.u8 != 0 && mModule->isSetTorchModeStrengthSupported()) {
+                // Samsung always has 5 supported torch strength levels
+                int32_t defaultTorchStrength = 1;
+                int32_t torchStrengthLevels = 5;
+                metadata.update(ANDROID_FLASH_INFO_STRENGTH_DEFAULT_LEVEL, &defaultTorchStrength, 1);
+                metadata.update(ANDROID_FLASH_INFO_STRENGTH_MAXIMUM_LEVEL, &torchStrengthLevels, 1);
+            }
+
+            convertToAidl(metadata.release(), _aidl_return);
         } else {
             ALOGE("%s: get camera info failed!", __FUNCTION__);
             status = Status::INTERNAL_ERROR;
@@ -347,16 +357,36 @@ ndk::ScopedAStatus CameraDevice::setTorchMode(bool in_on) {
     Status status = initStatus();
     if (status == Status::OK) {
         status = getAidlStatus(mModule->setTorchMode(mCameraId.c_str(), in_on));
+        if (status == Status::OK) {
+            mTorchStrengthLevel = 1;
+        }
     }
     return fromStatus(status);
 }
 
-ndk::ScopedAStatus CameraDevice::turnOnTorchWithStrengthLevel(int32_t) {
-    return fromStatus(Status::OPERATION_NOT_SUPPORTED);
+ndk::ScopedAStatus CameraDevice::turnOnTorchWithStrengthLevel(int32_t in_torchStrength) {
+    if (!mModule->isSetTorchModeStrengthSupported()) {
+        return fromStatus(Status::OPERATION_NOT_SUPPORTED);
+    }
+
+    Status status = initStatus();
+    if (status == Status::OK) {
+        status = getAidlStatus(
+                mModule->setTorchModeStrength(mCameraId.c_str(), true, in_torchStrength));
+        if (status == Status::OK) {
+            mTorchStrengthLevel = in_torchStrength;
+        }
+    }
+    return fromStatus(status);
 }
 
-ndk::ScopedAStatus CameraDevice::getTorchStrengthLevel(int32_t*) {
-    return fromStatus(Status::OPERATION_NOT_SUPPORTED);
+ndk::ScopedAStatus CameraDevice::getTorchStrengthLevel(int32_t* _aidl_return) {
+    if (!mModule->isSetTorchModeSupported()) {
+        return fromStatus(Status::OPERATION_NOT_SUPPORTED);
+    }
+
+    *_aidl_return = mTorchStrengthLevel;
+    return fromStatus(Status::OK);
 }
 
 std::shared_ptr<CameraDeviceSession> CameraDevice::createSession(

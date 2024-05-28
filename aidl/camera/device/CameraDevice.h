@@ -8,7 +8,7 @@
 
 #include "CameraDeviceSession.h"
 
-#include <CameraModule.h>
+#include <SamsungCameraModule.h>
 #include <aidl/android/hardware/camera/common/Status.h>
 #include <aidl/android/hardware/camera/device/BnCameraDevice.h>
 
@@ -26,7 +26,7 @@ using ::aidl::android::hardware::camera::device::ICameraDeviceCallback;
 using ::aidl::android::hardware::camera::device::ICameraDeviceSession;
 using ::aidl::android::hardware::camera::device::ICameraInjectionSession;
 using ::aidl::android::hardware::camera::device::StreamConfiguration;
-using ::android::hardware::camera::common::helper::CameraModule;
+using ::android::hardware::camera::common::helper::SamsungCameraModule;
 
 class CameraDevice : public BnCameraDevice {
   public:
@@ -35,7 +35,7 @@ class CameraDevice : public BnCameraDevice {
     // be multiple CameraDevice trying to access the same physical camera.  Also, provider will have
     // to keep track of all CameraDevice objects in order to notify CameraDevice when the underlying
     // camera is detached.
-    CameraDevice(sp<CameraModule> module, const std::string& cameraId,
+    CameraDevice(sp<SamsungCameraModule> module, const std::string& cameraId,
                  const SortedVector<std::pair<std::string, std::string>>& cameraDeviceNames);
     virtual ~CameraDevice();
 
@@ -70,7 +70,7 @@ class CameraDevice : public BnCameraDevice {
             camera3_device_t*, const camera_metadata_t* deviceInfo,
             const std::shared_ptr<ICameraDeviceCallback>&);
 
-    const sp<CameraModule> mModule;
+    const sp<SamsungCameraModule> mModule;
     const std::string mCameraId;
     // const after ctor
     int mCameraIdInt;
@@ -79,6 +79,7 @@ class CameraDevice : public BnCameraDevice {
     // Set by provider (when external camera is connected/disconnected)
     bool mDisconnected;
     std::weak_ptr<CameraDeviceSession> mSession{};
+    int32_t mTorchStrengthLevel = 1;
 
     const SortedVector<std::pair<std::string, std::string>>& mCameraDeviceNames;
 
