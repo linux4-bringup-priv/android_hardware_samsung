@@ -217,12 +217,23 @@ bool CameraProvider::initialize() {
             return true;
         }
     }
-    std::vector<int> extraIDs = { EXTRA_IDS };
+    std::vector<int> extraIDs = { EXTRA_IDS, 20, 50 };
     for (int i : extraIDs) {
         if (initCamera(i)) {
             mModule.clear();
             return true;
+        } else {
+            mNumberOfLegacyCameras++;
         }
+    }
+
+    concurrent_camera_combination_t* combinations = nullptr;
+    uint32_t count = 0;
+    rawModule->get_concurrent_streaming_camera_ids(&count, &combinations);
+    ALOGE("LINUX4: COUNT %d", count);
+    for (int i = 0; i < count; i++) {
+        ALOGE("LINUX4: [%d].val0 = %lu", i, combinations[i].val0);
+        ALOGE("LINUX4: [%d].val1 = %d", i, combinations[i].val1);
     }
 
     return false;  // mInitFailed
