@@ -19,10 +19,10 @@
 #include "FastCharge.h"
 #include <android-base/logging.h>
 #include <cutils/properties.h>
+#include <samsung_fastcharge.h>
 
 #include <fstream>
 #include <iostream>
-#include "samsung_fastcharge.h"
 
 namespace vendor {
 namespace lineage {

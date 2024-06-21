@@ -18,9 +18,10 @@
 
 #include "PowerShare.h"
 #include <android-base/logging.h>
+#include <samsung_powershare.h>
+
 #include <fstream>
 #include <iostream>
-#include "samsung_powershare.h"
 
 namespace vendor {
 namespace lineage {

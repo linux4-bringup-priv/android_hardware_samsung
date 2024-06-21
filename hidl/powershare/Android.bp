@@ -16,10 +16,10 @@
 
 cc_binary {
     name: "vendor.lineage.powershare@1.0-service.samsung",
+    defaults: ["samsung_header_path_defaults"],
     relative_install_path: "hw",
     init_rc: ["vendor.lineage.powershare@1.0-service.samsung.rc"],
     vintf_fragments: ["vendor.lineage.powershare@1.0-service.samsung.xml"],
-    local_include_dirs: ["include"],
     srcs: [
         "PowerShare.cpp",
         "service.cpp",

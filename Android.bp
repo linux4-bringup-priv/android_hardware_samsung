@@ -4,3 +4,20 @@ soong_namespace {
         "hardware/google/interfaces",
     ],
 }
+
+soong_config_module_type {
+    name: "samsung_header_path",
+    module_type: "cc_defaults",
+    config_namespace: "samsungVars",
+    value_variables: ["target_specific_header_path"],
+    properties: ["include_dirs"],
+}
+
+samsung_header_path {
+    name: "samsung_header_path_defaults",
+    soong_config_variables: {
+        target_specific_header_path: {
+            include_dirs: ["%s"],
+        },
+    },
+}

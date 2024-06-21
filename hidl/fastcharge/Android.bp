@@ -16,10 +16,10 @@
 
 cc_binary {
     name: "vendor.lineage.fastcharge@1.0-service.samsung",
+    defaults: ["samsung_header_path_defaults"],
     relative_install_path: "hw",
     init_rc: ["vendor.lineage.fastcharge@1.0-service.samsung.rc"],
     vintf_fragments: ["vendor.lineage.fastcharge@1.0-service.samsung.xml"],
-    local_include_dirs: ["include"],
     srcs: [
         "FastCharge.cpp",
         "service.cpp",

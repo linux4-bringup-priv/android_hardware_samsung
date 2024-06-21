@@ -1,15 +1,15 @@
 //
-// Copyright (C) 2021 The LineageOS Project
+// Copyright (C) 2021-2024 The LineageOS Project
 //
 // SPDX-License-Identifier: Apache-2.0
 //
 
 cc_binary {
     name: "android.hardware.light-service.samsung",
+    defaults: ["samsung_header_path_defaults"],
     relative_install_path: "hw",
     init_rc: ["android.hardware.light-service.samsung.rc"],
     vintf_fragments: ["android.hardware.light-service.samsung.xml"],
-    local_include_dirs: ["include"],
     srcs: [
         "Lights.cpp",
         "service.cpp",
