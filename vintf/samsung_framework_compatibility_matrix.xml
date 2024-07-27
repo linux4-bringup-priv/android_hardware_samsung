@@ -27,6 +27,14 @@
             <instance>default</instance>
         </interface>
     </hal>
+    <hal format="hidl">
+        <name>vendor.samsung.hardware.bluetooth.a2dpsink</name>
+        <version>1.0</version>
+        <interface>
+            <name>ISehBluetoothA2dpSinkProvidersFactory</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
     <hal format="hidl" optional="true">
         <name>vendor.samsung.hardware.camera.provider</name>
         <version>4.0</version>
@@ -48,6 +56,13 @@
         <version>2.0</version>
         <interface>
             <name>ISehHealth</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+    <hal format="aidl" optional="true">
+        <name>vendor.samsung.hardware.media.converter</name>
+        <interface>
+            <name>ISehColorConverterStore</name>
             <instance>default</instance>
         </interface>
     </hal>
@@ -110,6 +125,14 @@
         <version>1</version>
         <interface>
             <name>ISehRadioNetwork</name>
+            <instance>slot1</instance>
+            <instance>slot2</instance>
+        </interface>
+    </hal>
+    <hal format="aidl" optional="true">
+        <name>vendor.samsung.hardware.radio.sim</name>
+        <interface>
+            <name>ISehRadioSim</name>
             <instance>slot1</instance>
             <instance>slot2</instance>
         </interface>
