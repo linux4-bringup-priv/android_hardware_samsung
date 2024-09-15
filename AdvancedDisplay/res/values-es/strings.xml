@@ -33,5 +33,12 @@
     <string name="mdnie_scenario_vt">Videollamada</string>
     <string name="mdnie_scenario_browser">Navegador</string>
     <string name="mdnie_scenario_ebook">Libro electrónico</string>
+    <string name="mdnie_scenario_email">Correo electrónico</string>
+    <string name="mdnie_scenario_tdmb">Televisión digital</string>
+    <string name="mdnie_accessibility_normal">Normal</string>
+    <string name="mdnie_accessibility_inverse">Invertido</string>
+    <string name="mdnie_accessibility_color_blind">Daltonismo</string>
     <string name="mdnie_accessibility_screen_curtain">Cortina de pantalla</string>
+    <string name="mdnie_accessibility_grayscale">Gris</string>
+    <string name="mdnie_accessibility_gray_negative">Gris invertido</string>
 </resources>
