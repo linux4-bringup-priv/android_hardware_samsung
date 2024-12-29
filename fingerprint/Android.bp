@@ -7,10 +7,11 @@
 cc_library_static {
     name: "libudfps_extension.samsung",
     srcs: ["UdfpsExtension.cpp"],
+    cflags: select(soong_config_variable("samsung_udfps", "dimlayerzorder"), {
+        any @ zorder: ["-DFOD_PRESSED_LAYER_ZORDER=" + zorder],
+        default: [],
+    }),
     include_dirs: [
-        "frameworks/native/services/surfaceflinger/CompositionEngine/include"
-    ],
-    header_libs: [
-        "generated_kernel_headers",
+        "frameworks/native/services/surfaceflinger/CompositionEngine/include",
     ],
 }
