@@ -4,13 +4,28 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+soong_config_module_type {
+    name: "samsung_udfps_extension",
+    module_type: "cc_defaults",
+    config_namespace: "samsungUdfpsVars",
+    value_variables: ["pressed_layer_zorder"],
+    properties: ["cppflags"],
+}
+
+samsung_udfps_extension {
+    name: "samsung_udfps_extension_defaults",
+    soong_config_variables: {
+        pressed_layer_zorder: {
+            cppflags: ["-DFOD_PRESSED_LAYER_ZORDER=%s"],
+        },
+    },
+}
+
 cc_library_static {
     name: "libudfps_extension.samsung",
+    defaults: ["samsung_udfps_extension_defaults"],
     srcs: ["UdfpsExtension.cpp"],
     include_dirs: [
         "frameworks/native/services/surfaceflinger/CompositionEngine/include"
-    ],
-    header_libs: [
-        "generated_kernel_headers",
     ],
 }
